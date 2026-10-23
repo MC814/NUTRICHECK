@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriCheck | Pediatric Nutrition & Meal Ordering</title>
+<style>
+  :root { --primary:#4A90E2; --secondary:#50E3C2; --accent:#F5A623; --bg:#F5F7FA; }
+  * { box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; margin:0; background:var(--bg); color:#333; }
+  header { background:linear-gradient(135deg,var(--primary),var(--secondary)); color:#fff; padding:2rem 1rem; text-align:center; }
+  header h1 { margin:0; font-size:2.2rem; }
+  nav { margin-top:12px; }
+  nav button { background:rgba(255,255,255,.2); color:#fff; border:1px solid #fff; padding:8px 18px; border-radius:20px; cursor:pointer; margin:0 5px; font-size:1rem; }
+  nav button.active { background:#fff; color:var(--primary); font-weight:bold; }
+  .container { max-width:850px; margin:-25px auto 20px; padding:0 15px; }
+  .card { background:#fff; border-radius:12px; padding:1.5rem; margin-bottom:20px; box-shadow:0 4px 6px rgba(0,0,0,.1); }
+  h2 { color:var(--primary); border-bottom:2px solid var(--secondary); display:inline-block; padding-bottom:6px; }
+  .form-group { margin-bottom:14px; }
+  label { display:block; margin-bottom:5px; font-weight:bold; }
+  input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:1rem; }
+  .btn { background:var(--primary); color:#fff; border:none; padding:12px; border-radius:6px; cursor:pointer; width:100%; font-size:1rem; }
+  .btn:hover { opacity:.9; }
+  .result { margin-top:15px; padding:12px; border-radius:6px; display:none; }
+  .ok { background:#d4edda; color:#155724; } .warn { background:#fff3cd; color:#856404; } .bad { background:#f8d7da; color:#721c24; }
+  .menu-item { display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #eee; border-radius:8px; margin-bottom:10px; }
+  .badge { font-size:.75rem; padding:2px 8px; border-radius:10px; background:#e8f5e9; color:#2e7d32; }
+  .cart-item { display:flex; justify-content:space-between; font-size:.9rem; margin-bottom:6px; }
+  .total { font-weight:bold; border-top:2px solid #eee; padding-top:8px; margin-top:8px; }
+  .checkout { background:var(--accent); }
+  table { width:100%; border-collapse:collapse; margin-top:12px; }
+  th, td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
+  footer { text-align:center; padding:20px; color:#777; font-size:.85rem; }
+  .page { display:none; } .page.show { display:block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NutriCheck</h1>
+  <p>Pediatric Nutrition Diagnosis & Daily Meal Ordering</p>
+  <nav>
+    <button class="active" onclick="showPage('home',this)">Home / Tools</button>
+    <button onclick="showPage('order',this)">Order Food</button>
+  </nav>
+</header>
+
+<div class="container">
+
+<!-- ==================== HOME PAGE ==================== -->
+<div id="home" class="page show">
+
+  <div class="card">
+    <h2>Symptom Checker</h2>
+    <div class="form-group">
+      <label>Observed Symptoms (hold Ctrl to pick several)</label>
+      <select id="symptom" multiple style="height:110px;">
+        <option value="fatigue">Chronic Fatigue</option>
+        <option value="pica">Craving non-food items (Pica)</option>
+        <option value="dry_skin">Dry / Brittle Skin or Hair</option>
+        <option value="mouth">Mouth sores or bleeding gums</option>
+        <option value="growth">Slowed growth</option>
+      </select>
+    </div>
+    <button class="btn" onclick="analyze()">Analyze Symptoms</button>
+    <div id="diag-result" class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2>Pediatric BMI Calculator</h2>
+    <div class="form-group"><label>Height (cm)</label><input type="number" id="height" placeholder="e.g. 120"></div>
+    <div class="form-group"><label>Weight (kg)</label><input type="number" id="weight" placeholder="e.g. 25"></div>
+    <button class="btn" onclick="calcBMI()">Calculate BMI</button>
+    <div id="bmi-result" class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2>Daily Food Diary</h2>
+    <div style="display:flex; gap:10px;">
+      <input type="text" id="food-item" placeholder="Food item">
+      <input type="number" id="calories" placeholder="Calories" style="width:120px;">
+    </div>
+    <br>
+    <button class="btn" onclick="addFood()">Add to Diary</button>
+    <table>
+      <thead><tr><th>Item</th><th>Calories</th></tr></thead>
+      <tbody id="food-list"></tbody>
+      <tfoot><tr><td><strong>Total</strong></td><td id="total-cal">0</td></tr></tfoot>
+    </table>
+  </div>
+
+</div>
+
+<!-- ==================== ORDER PAGE ==================== -->
+<div id="order" class="page">
+  <div class="card">
+    <h2>Today's Menu</h2>
+    <div id="menu"></div>
+  </div>
+  <div class="card">
+    <h2>Your Order</h2>
+    <div id="cart"><em style="color:#888">Cart is empty</em></div>
+    <div class="total">Total: ₹<span id="total">0</span></div>
+    <button class="btn checkout" onclick="checkout()">Place Order</button>
+    <div id="confirm" class="result"></div>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  <strong>Disclaimer:</strong> Demo application for educational purposes only. Not a medical device.<br>
+  © 2026 NutriCheck
+</footer>
+
+<script>
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// --- Symptom checker ---
+function analyze() {
+  const sel = Array.from(document.getElementById('symptom').selectedOptions).map(o => o.value);
+  const box = document.getElementById('diag-result');
+  box.style.display = 'block';
+  if (!sel.length) { box.className='result warn'; box.textContent='Please select at least one symptom.'; return; }
+  let f = [];
+  if (sel.includes('fatigue') && sel.includes('pica')) f.push('Possible Iron Deficiency Anemia.');
+  if (sel.includes('dry_skin')) f.push('Possible Vitamin A or E deficiency.');
+  if (sel.includes('mouth')) f.push('Possible Vitamin C or B-vitamin deficiency.');
+  if (sel.includes('growth')) f.push('General malnutrition risk — consult a pediatrician.');
+  if (!f.length) f.push('No specific pattern found in this demo. Consult a doctor.');
+  box.className = 'result ok';
+  box.innerHTML = '<strong>Preliminary Analysis:</strong><br>' + f.join('<br>');
+}
+
+// --- BMI ---
+function calcBMI() {
+  const h = document.getElementById('height').value, w = document.getElementById('weight').value;
+  const box = document.getElementById('bmi-result');
+  box.style.display = 'block';
+  if (!h || !w) { box.className='result warn'; box.textContent='Enter both height and weight.'; return; }
+  const bmi = (w / ((h/100)**2)).toFixed(1);
+  let status, cls;
+  if (bmi < 15) { status='Underweight'; cls='warn'; }
+  else if (bmi < 25) { status='Healthy Weight Range'; cls='ok'; }
+  else { status='Overweight Risk'; cls='bad'; }
+  box.className = 'result ' + cls;
+  box.innerHTML = `BMI: <strong>${bmi}</strong> — ${status}<br><small>For children, age/gender percentiles are needed for accuracy.</small>`;
+}
+
+// --- Food diary ---
+let totalCal = 0;
+function addFood() {
+  const item = document.getElementById('food-item').value;
+  const cals = parseInt(document.getElementById('calories').value);
+  if (!item || !cals) { alert('Enter a food name and calories.'); return; }
+  const row = document.getElementById('food-list').insertRow();
+  row.insertCell(0).textContent = item;
+  row.insertCell(1).textContent = cals;
+  total
